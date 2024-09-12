@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Page</title>
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <h1>Complete Your Payment</h1>
+
+    <!-- Stripe Card Element -->
+    <div id="card-element">
+        <!-- A Stripe Element will be inserted here. -->
+    </div>
+
+    <!-- Used to display form errors -->
+    <div id="card-errors" role="alert"></div>
+
+    <button id="pay-button">Pay</button>
+
+    <script>
+        // Initialize Stripe.js with your publishable key
+        var stripe = Stripe('{{ stripe_publishable_key }}');
+
+        // Set up Stripe.js and Elements to use in checkout form
+        var elements = stripe.elements();
+        var card = elements.create('card');
+        card.mount('#card-element');
+
+        // Handle real-time validation errors from the card Element.
+        card.on('change', function(event) {
+            var displayError = document.getElementById('card-errors');
+            if (event.error) {
+                displayError.textContent = event.error.message;
+            } else {
+                displayError.textContent = '';
+            }
+        });
+
+        document.getElementById('pay-button').addEventListener('click', async function () {
+            // Create a PaymentIntent by calling the backend API
+            const response = await fetch('http://127.0.0.1:8000/create-payment-intent/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    amount: 5000, // amount in cents (e.g., $50.00)
+                    description: 'Payment for Order #1234'
+                }),
+            });
+
+            const data = await response.json();
+
+            // Confirm the payment with the client secret from the PaymentIntent
+            const result = await stripe.confirmCardPayment(data.client_secret, {
+                payment_method: {
+                    card: card,
+                    billing_details: {
+                        name: 'Customer Name',
+                    },
+                }
+            });
+
+            if (result.error) {
+                // Show error to your customer
+                console.error(result.error.message);
+                alert(result.error.message);
+            } else {
+                if (result.paymentIntent.status === 'succeeded') {
+                    // The payment has been processed!
+                    alert('Payment successful!');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

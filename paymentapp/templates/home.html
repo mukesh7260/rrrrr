@@ -1,0 +1,11 @@
+<h1>hello</h1>
+<h2> Buy for 5.000Rs</h2>
+<form action="{% url 'charge' %}" method="post">
+    {% csrf_token %}
+        <script src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+            data-key="{{key}}"
+            data-decription="payment Gateway"
+            data-amount="500"
+            data-locale="auto">
+        </script>
+</form>
